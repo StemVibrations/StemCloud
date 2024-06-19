@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: signe-run-
+spec:
+  entrypoint: signe-run
+  templates:
+  - name: signe-run
+    steps:
+    - - name: signe-run
+        template: signe-run-step
+  - name: signe-run-step
+    container:
+      image: *****
+      command: [python, ./StemCloud/example/example_stem.py]
+    outputs:
+      artifacts:
+      - name: input
+        path: /uvec_train_model
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: stem-data
+          key: data
+          region: eu-west-1
+          accessKeySecret:
+            name: my-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-s3-credentials
+            key: secretKey
+        archive:
+          none: {}      

@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: range-workflow-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: generate-range
+        template: generate-range
+    - - name: signe-run-step
+        template: signe-run-step
+        arguments:
+          parameters:
+          - name: range
+            value: "{{item}}"
+        withParam: "{{steps.generate-range.outputs.result}}"
+
+  - name: generate-range
+    script:
+      image: ******
+      command: [python]
+      source: |
+        import json
+        temp = list(range(10))
+        print(json.dumps(temp))
+  - name: signe-run-step
+    inputs:
+      parameters:
+      - name: range
+    nodeSelector:
+      alpha.eksctl.io/nodegroup-name: c7ixlarge
+    container:
+      image: ******
+      command: [python, ./StemCloud/example/example_stem.py, "{{inputs.parameters.range}}"]
+      resources:
+        requests:
+          cpu: "3"
+          memory: "6Gi"
+        limits:
+          cpu: "3"
+          memory: "6Gi"
+    outputs:
+      artifacts:
+      - name: input
+        path: /uvec_train_model
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: stem-data
+          key: run_multiple_fast/{{inputs.parameters.range}}
+          region: eu-west-1
+          accessKeySecret:
+            name: my-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-s3-credentials
+            key: secretKey
+        archive:
+          none: {}      
